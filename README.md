@@ -1,6 +1,8 @@
 # Carpooling
 
-**DEVELOPMENT OF A MATCHING ALGORITHM TO GENERATE A CARPOOLING SCHEDULE**
+**Developped an optimized matching algorithm to generate a private carpooling program.**
+
+**Used : Julia (JuMP, GLPK, CPLEX)**
 
 
 **Project Description:**
