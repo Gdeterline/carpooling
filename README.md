@@ -2,7 +2,7 @@
 
 **Developped an optimized matching algorithm to generate a private carpooling program.**
 
-**Used : Julia (JuMP, GLPK, CPLEX)**
+**Used Julia : JuMP, GLPK, CPLEX, Gurobi**
 
 
 **Project Description:**
