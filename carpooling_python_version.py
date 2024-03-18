@@ -30,7 +30,7 @@ offers_worksheet.columns
 
 # First treatment of the offer sheet data
 
-horaires_offerss = offers_worksheet.columns[6:]
+horaires_offers = offers_worksheet.columns[6:]
 print(horaires_offers)
 print()
 name_offers = offers_worksheet.loc[:, "Nom"]
@@ -46,6 +46,11 @@ availabilities_offers = offers_worksheet.loc[:, "Lundi 8h":"Vendredi 17h30"]
 print(availabilities_offers)
 print()
 
+
+# Try push to a datasheet
+# Convert horaires_offers to a DataFrame
+#horaires_offers_df = pd.DataFrame(horaires_offers)
+#horaires_offers_df.to_csv("./horaires_offers.csv", index=False, header=False)
 
 # %%
 
@@ -87,3 +92,5 @@ print(f"Number of requests: {nb_requests}")
             
 
 # %%
+
+
