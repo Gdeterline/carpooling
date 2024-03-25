@@ -1,6 +1,7 @@
 # %%
 # Import the required libraries
 import pandas as pd
+import numpy as np
 
 
 # Load the workbooks and their respective worksheets
@@ -91,6 +92,62 @@ for i in range(number_passengers):
 print(f"Number of requests: {nb_requests}")
             
 
+# %%
+
+# family matrix with the first column being the passenger number (sheet Demandes_2022) and the second column being the driver number (from the same family) (sheet Offres_2022)
+
+family = np.zeros((number_passengers, 2), dtype=int)
+
+for i in range(number_passengers):
+    family[i, 0] = i + 1
+    for j in range(number_drivers):
+        if name_requests[i] in child_offers.iloc[j].values:
+            family[i, 1] = j + 1
+
+print(family)
+print()
+
+
+# %%
+
+availabilities_offers.head(5)
+
+
+# %%
+
+# places_offered_drivers matrix with the first column being the driver number (sheet Offres_2022) and the second column being the number of places offered by the driver
+# over the two weeks
+
+places_offered_drivers = np.zeros((number_drivers, 2), dtype=int)
+
+for i in range(number_drivers):
+    places_offered_drivers[i, 0] = i + 1
+    for j in range(availabilities_offers.shape[1]):
+        if availabilities_offers.iloc[i, j] == "Oui": 
+            places_offered_drivers[i, 1] += 2 * number_places_offers[i]
+        elif availabilities_offers.iloc[i, j] == "Impair":
+            places_offered_drivers[i, 1] += number_places_offers[i]
+        elif availabilities_offers.iloc[i, j] == "Pair":
+            places_offered_drivers[i, 1] += number_places_offers[i]
+
+print(places_offered_drivers)
+print()
+
+
+#%%
+
+# places_offered_passengers matrix with the first column being the passenger number (sheet Demandes_2022) and the second column being the number of places offered by the driver
+
+places_offered_passengers = np.zeros((number_passengers, 2), dtype=int)
+
+for i in range(number_passengers):
+    places_offered_passengers[i, 0] = i + 1
+    for j in range(number_drivers):
+        if family[i, 1] == places_offered_drivers[j, 0]:
+            places_offered_passengers[i, 1] = places_offered_drivers[j, 1]
+
+print(places_offered_passengers)
+print()
 # %%
 
 
