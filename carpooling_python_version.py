@@ -32,19 +32,19 @@ offers_worksheet.columns
 # First treatment of the offer sheet data
 
 horaires_offers = offers_worksheet.columns[6:]
-print(horaires_offers)
+#print(horaires_offers)
 print()
 name_offers = offers_worksheet.loc[:, "Nom"]
-print(name_offers)
+#print(name_offers)
 print()
 child_offers = offers_worksheet.loc[:, "Enfant 1":"Enfant 3"]
-print(child_offers)
+#print(child_offers)
 print()
 number_places_offers = offers_worksheet.loc[:, "Places"]
 print(number_places_offers)
 print()
 availabilities_offers = offers_worksheet.loc[:, "Lundi 8h":"Vendredi 17h30"]
-print(availabilities_offers)
+#print(availabilities_offers)
 print()
 
 
@@ -77,6 +77,12 @@ number_drivers = len(name_offers)
 number_passengers = len(name_requests)
 print(f"Number of drivers: {number_drivers}")
 print(f"Number of passengers: {number_passengers}")
+
+# number of schedules T
+T = requests_worksheet.shape[1] - 1
+print("Nombre d'horaire T =", T)
+
+
 
 # Print total number of requests over 2 weeks
 for i in range(number_passengers):
@@ -148,6 +154,138 @@ for i in range(number_passengers):
 
 print(places_offered_passengers)
 print()
+
+
 # %%
 
 
+print(availabilities_offers.stack().unique())
+
+# %%
+
+# Determine the number of offers over one week (equals two weeks here since there are only Oui and Non values in the availabilities_offers matrix)
+N_o = sum(x in ["Oui", "Pair", "Impair"] for x in availabilities_offers.values.flatten())
+print(f"Number of offers: {N_o}")
+
+# Determine the number of requests over one week
+N_r = sum(x in ["Oui", "Pair", "Impair"] for x in availabilities_requests.values.flatten())
+print(f"Number of requests: {N_r}")
+
+
+# %%
+
+############################## NEED TO DEBUG THIS PART ########################################
+# Initialize matrix O
+O = np.zeros((N_o, 5), dtype=int)
+
+# Counter for valid offers
+idx = 0
+
+
+# Traverse the offers array
+
+for i in range(availabilities_offers.shape[0]):
+    nb_places = number_places_offers[i]
+    for j in range(availabilities_offers.shape[1]):
+        if availabilities_offers.iloc[i, j] == "Oui":
+            # Store the offer in matrix O
+            O[idx, 0] = i + 1
+            O[idx, 1] = j + 1
+            O[idx, 2] = 1
+            O[idx, 3] = 1
+            O[idx, 4] = nb_places
+            idx += 1
+        elif availabilities_offers.iloc[i, j] == "Pair":
+            # Store the offer in matrix O
+            O[idx, 0] = i + 1
+            O[idx, 1] = j + 1
+            O[idx, 2] = 1
+            O[idx, 3] = 0
+            O[idx, 4] = nb_places
+            idx += 1
+        elif availabilities_offers.iloc[i, j] == "Impair":
+            # Store the offer in matrix O
+            O[idx, 0] = i + 1
+            O[idx, 1] = j + 1
+            O[idx, 2] = 0
+            O[idx, 3] = 1
+            O[idx, 4] = nb_places
+            idx += 1
+
+
+print("Matrix O:")
+print(O)
+print()
+
+
+
+# Initialize matrix R
+R = np.zeros((N_r, 4), dtype=int)
+
+# Counter for valid requests
+idr = 0
+
+# Traverse the requests array
+for i in range(availabilities_requests.shape[0]):
+    for j in range(availabilities_requests.shape[1]):
+        if availabilities_requests[i, j] == "Oui":
+            # Store the request in matrix R
+            R[idr, 0] = i + 1
+            R[idr, 1] = j + 1
+            R[idr, 2] = 1
+            R[idr, 3] = 1
+            idr += 1
+        elif availabilities_requests[i, j] == "Pair":
+            # Store the request in matrix R
+            R[idr, 0] = i + 1
+            R[idr, 1] = j + 1
+            R[idr, 2] = 1
+            R[idr, 3] = 0
+            idr += 1
+        elif availabilities_requests[i, j] == "Impair":
+            # Store the request in matrix R
+            R[idr, 0] = i + 1
+            R[idr, 1] = j + 1
+            R[idr, 2] = 0
+            R[idr, 3] = 1
+            idr += 1
+
+print("Matrix R:")
+print(R)
+print()
+
+# Display drivers and passengers
+print()
+
+# Traverse all days and hours
+for t in range(1, T+1):
+    # Find available drivers at the hour and even weeks
+    available_drivers_pairs = np.unique(O[(O[:, 1] == t) & (O[:, 2] == 1), 0])
+    # Find available drivers at the hour and odd weeks
+    available_drivers_impairs = np.unique(O[(O[:, 1] == t) & (O[:, 3] == 1), 0])
+
+    # Display available drivers at the hour and even weeks
+    print(f"Drivers available for a ride at hour {t} on even weeks:")
+    print(available_drivers_pairs)
+    
+    # Display available drivers at the hour and odd weeks
+    print(f"Drivers available for a ride at hour {t} on odd weeks:")
+    print(available_drivers_impairs)
+
+print()
+
+for t in range(1, T+1):
+    # Find available passengers at the hour and even weeks
+    available_passengers_pairs = np.unique(R[(R[:, 1] == t) & (R[:, 2] == 1), 0])
+    # Find available passengers at the hour and odd weeks
+    available_passengers_impairs = np.unique(R[(R[:, 1] == t) & (R[:, 3] == 1), 0])
+
+    # Display available passengers at the hour and even weeks
+    print(f"Passengers requesting a ride at hour {t} on even weeks:")
+    print(available_passengers_pairs)
+    
+    # Display available passengers at the hour and odd weeks
+    print(f"Passengers requesting a ride at hour {t} on odd weeks:")
+    print(available_passengers_impairs)
+
+# %%
