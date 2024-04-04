@@ -35,13 +35,13 @@ horaires_offers = offers_worksheet.columns[6:]
 #print(horaires_offers)
 print()
 name_offers = offers_worksheet.loc[:, "Nom"]
-#print(name_offers)
+print(name_offers)
 print()
 child_offers = offers_worksheet.loc[:, "Enfant 1":"Enfant 3"]
 #print(child_offers)
 print()
 number_places_offers = offers_worksheet.loc[:, "Places"]
-print(number_places_offers)
+#print(number_places_offers)
 print()
 availabilities_offers = offers_worksheet.loc[:, "Lundi 8h":"Vendredi 17h30"]
 #print(availabilities_offers)
@@ -174,7 +174,8 @@ print(f"Number of requests: {N_r}")
 
 # %%
 
-############################## NEED TO DEBUG THIS PART ########################################
+# Create the matrices O and R
+
 # Initialize matrix O
 O = np.zeros((N_o, 5), dtype=int)
 
@@ -228,21 +229,21 @@ idr = 0
 # Traverse the requests array
 for i in range(availabilities_requests.shape[0]):
     for j in range(availabilities_requests.shape[1]):
-        if availabilities_requests[i, j] == "Oui":
+        if availabilities_requests.iloc[i, j] == "Oui":
             # Store the request in matrix R
             R[idr, 0] = i + 1
             R[idr, 1] = j + 1
             R[idr, 2] = 1
             R[idr, 3] = 1
             idr += 1
-        elif availabilities_requests[i, j] == "Pair":
+        elif availabilities_requests.iloc[i, j] == "Pair":
             # Store the request in matrix R
             R[idr, 0] = i + 1
             R[idr, 1] = j + 1
             R[idr, 2] = 1
             R[idr, 3] = 0
             idr += 1
-        elif availabilities_requests[i, j] == "Impair":
+        elif availabilities_requests.iloc[i, j] == "Impair":
             # Store the request in matrix R
             R[idr, 0] = i + 1
             R[idr, 1] = j + 1
@@ -254,8 +255,9 @@ print("Matrix R:")
 print(R)
 print()
 
+#%%
 # Display drivers and passengers
-print()
+
 
 # Traverse all days and hours
 for t in range(1, T+1):
@@ -287,5 +289,84 @@ for t in range(1, T+1):
     # Display available passengers at the hour and odd weeks
     print(f"Passengers requesting a ride at hour {t} on odd weeks:")
     print(available_passengers_impairs)
+
+
+# %%
+
+# A and B initialization with zeros
+A = np.zeros((number_drivers, T, 2), dtype=int)
+B = np.zeros((number_passengers, T, 2), dtype=int)
+
+###### Reminder : Julia's indexes begin at 1, Python's start at 0
+
+# Fill A with O values
+for i in range(O.shape[0]):
+    driver = O[i, 0] - 1  # Adjust the index by subtracting 1
+    time = O[i, 1] - 1  # Adjust the index by subtracting 1
+    if O[i, 2] == 1:
+        A[driver, time, 0] = 1
+    if O[i, 3] == 1:
+        A[driver, time, 1] = 1
+
+
+# Fill B with R values
+for i in range(R.shape[0]):
+    passenger = R[i, 0] - 1  # Adjust the index by subtracting 1
+    time = R[i, 1] - 1  # Adjust the index by subtracting 1
+    if R[i, 2] == 1:
+        B[passenger, time, 0] = 1
+    if R[i, 3] == 1:
+        B[passenger, time, 1] = 1
+
+
+print("Variable A:")
+print(A)
+
+# For details on the A matrix uncomment the following
+print(len(A))
+print(len(A[0]))
+with np.printoptions(threshold=np.inf):
+    print(A)
+
+#%%
+
+# print(A[:,:,1]) To see the first part of the full A matrix
+
+#%%
+
+
+print("Variable A:")
+print(B)
+
+# For details on the B matrix uncomment the following
+print(len(B))
+print(len(B[0]))
+with np.printoptions(threshold=np.inf):
+    print(B)
+
+
+# %%
+
+# Create the M matrix
+M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
+
+Beta = 7
+
+for parent in range(number_drivers):
+    for child in range(number_passengers):
+        #Need condition for :  if name_requests[child] == child_offers[parent]
+        if name_requests[child] in child_offers.iloc[parent].values: #### To check
+            for t in range(T):
+                for w in range(2):
+                    M[child, parent, t, w] = Beta
+        else:
+            for t in range(T):
+                for w in range(2):
+                    M[child, parent, t, w] = 10 - Beta
+
+print("Matrix M:")
+with np.printoptions(threshold=np.inf):
+    print(M)
+
 
 # %%
