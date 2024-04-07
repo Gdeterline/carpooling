@@ -2,6 +2,8 @@
 # Import the required libraries
 import pandas as pd
 import numpy as np
+from pulp import LpProblem, LpVariable, LpBinary, LpInteger, LpMaximize, lpSum
+
 
 
 # Load the workbooks and their respective worksheets
@@ -352,9 +354,27 @@ M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
 
 Beta = 7
 
-for parent in range(number_drivers):
-    for child in range(number_passengers):
-        #Need condition for :  if name_requests[child] == child_offers[parent]
+
+
+""" Test to check if the if condition works as expected
+print(name_requests)
+print(child_offers)
+print()
+print(name_requests[6])
+print(child_offers.iloc[0].values)
+print()
+if name_requests[6] in child_offers.iloc[0].values:
+    print("True")
+else:
+    print("False") 
+    It seems to be working as expected """
+
+###### Étonnant car résultat différent de Mayeul ######
+###### Mais la if condition semble correcte ###########
+###### Voir avec Charlotte et Alessandro ##############
+
+for child in range(number_passengers):
+    for parent in range(number_drivers):
         if name_requests[child] in child_offers.iloc[parent].values: #### To check
             for t in range(T):
                 for w in range(2):
@@ -367,6 +387,93 @@ for parent in range(number_drivers):
 print("Matrix M:")
 with np.printoptions(threshold=np.inf):
     print(M)
+
+
+
+
+# %%
+
+#### Covoiturage function ####
+#### Need to continue debugging ####
+
+def covoiturage(Beta, Alpha):
+    
+    # Create the M matrix
+    M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
+    
+    for parent in range(name_offers.shape[0]):
+        for child in range(name_requests.shape[0]):
+            if name_requests[child] == child_offers[parent]:
+                for t in range(T):
+                    for w in range(2):
+                        M[child, parent, t, w] = Beta
+            else:
+                for t in range(T):
+                    for w in range(2):
+                        M[child, parent, t, w] = 10 - Beta
+    
+
+    # Création du modèle
+    m = LpProblem("Carpooling", LpMaximize)
+
+    # Variables de décision
+    X = LpVariable.dicts("X", ((i, j, t, w) for i in range(1, number_passengers+1) for j in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)), cat='Binary') 
+    E = LpVariable.dicts("E", ((j, t, w) for j in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)), cat='Binary')
+    G = LpVariable.dicts("G", (j for j in range(1, number_drivers+1)), cat='Integer')
+
+    # Contraintes
+    for t in range(1, T+1):
+        for w in range(1, 3):
+            for c in range(1, number_drivers+1):
+                m += E[c,t,w] >= 10**(-2)*sum(X[n, c, t, w] for n in range(1, number_passengers+1))
+
+    for c in range(1, number_drivers+1):
+        m += lpSum(E[c,t, w] for t in range(1, T+1) for w in range(1, 3)) == G[c]
+
+    for n in range(1, number_passengers+1):
+        m += lpSum(X[n, c, t, w] for c in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)) <= places_offered_passengers[n,2]
+
+    for t in range(1, T+1):
+        for c in range(1, number_drivers+1):
+            for w in range(1, 3):
+                m += lpSum(X[n, c, t, w] for n in range(1, number_passengers+1)) <= number_places_offers[c]
+
+    for t in range(1, T+1):
+        for n in range(1, number_passengers+1):
+            for w in range(1, 3):
+                m += lpSum(X[n, c, t, w]*A[c, t, w]*B[n, t, w] for c in range(1, number_drivers+1)) <= 1
+
+    for t in range(1, T+1):
+        for c in range(1, number_drivers+1):
+            for w in range(1, 3):
+                if A[c, t, w] == 0:
+                    m += lpSum(X[n, c, t, w] for n in range(1, number_passengers+1)) == 0
+
+    for t in range(1, T+1):
+        for n in range(1, number_passengers+1):
+            for w in range(1, 3):
+                if B[n, t, w] == 0:
+                    m += lpSum(X[n, c, t, w] for c in range(1, number_drivers+1)) == 0
+
+    # Fonction objectif
+    m += lpSum(np.multiply(X, M)) - Alpha*lpSum(G)
+
+    # Résolution du problème
+    m.solve()
+
+    # Vérification du statut de la solution
+    if m.status == 1:
+        print("Solution optimale trouvée:")
+    elif m.status == -1:
+        print("Il n'existe aucune solution :'(")
+    elif m.status == 0:
+        print("Solution réalisable trouvée, mais pas nécessairement optimale")
+    else:
+        print("Voir la documentation")
+        
+
+covoiturage(6.5, 4)
+
 
 
 # %%
