@@ -332,7 +332,7 @@ with np.printoptions(threshold=np.inf):
 
 #%%
 
-# print(A[:,:,1]) To see the first part of the full A matrix
+print(A[:,:,1]) #To see the first part of the full A matrix
 
 #%%
 
@@ -346,6 +346,9 @@ print(len(B[0]))
 with np.printoptions(threshold=np.inf):
     print(B)
 
+#%%
+
+print(B[:,:,1]) #To see the first part of the full B matrix
 
 # %%
 
@@ -354,12 +357,15 @@ M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
 
 Beta = 7
 
+""" #%%
+
+#Test to check if the if condition works as expected
 
 
-""" Test to check if the if condition works as expected
 print(name_requests)
 print(child_offers)
 print()
+
 print(name_requests[6])
 print(child_offers.iloc[0].values)
 print()
@@ -367,7 +373,10 @@ if name_requests[6] in child_offers.iloc[0].values:
     print("True")
 else:
     print("False") 
-    It seems to be working as expected """
+    
+ #   It seems to be working as expected """
+ 
+ #%%
 
 ###### Étonnant car résultat différent de Mayeul ######
 ###### Mais la if condition semble correcte ###########
@@ -388,8 +397,22 @@ print("Matrix M:")
 with np.printoptions(threshold=np.inf):
     print(M)
 
+#%%
 
+# Print the indexes of the M matrix where there are several 7
+""" indexes = np.argwhere(M == 7)
+print(indexes) """
 
+""" print(M[42, 9, 25, 1])
+print(M[0, 25, 0, 0]) """
+
+print(name_requests)
+print(child_offers)
+
+""""
+with np.printoptions(threshold=np.inf):
+    print(M[:, :, :, 1]) #To see the first part of the full M matrix
+"""
 
 # %%
 
@@ -403,7 +426,7 @@ def covoiturage(Beta, Alpha):
     
     for parent in range(name_offers.shape[0]):
         for child in range(name_requests.shape[0]):
-            if name_requests[child] == child_offers[parent]:
+            if name_requests[child] in child_offers.iloc[parent].values:
                 for t in range(T):
                     for w in range(2):
                         M[child, parent, t, w] = Beta
@@ -415,48 +438,52 @@ def covoiturage(Beta, Alpha):
 
     # Création du modèle
     m = LpProblem("Carpooling", LpMaximize)
+    
+    
 
     # Variables de décision
-    X = LpVariable.dicts("X", ((i, j, t, w) for i in range(1, number_passengers+1) for j in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)), cat='Binary') 
-    E = LpVariable.dicts("E", ((j, t, w) for j in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)), cat='Binary')
-    G = LpVariable.dicts("G", (j for j in range(1, number_drivers+1)), cat='Integer')
-
-    # Contraintes
-    for t in range(1, T+1):
-        for w in range(1, 3):
-            for c in range(1, number_drivers+1):
-                m += E[c,t,w] >= 10**(-2)*sum(X[n, c, t, w] for n in range(1, number_passengers+1))
-
-    for c in range(1, number_drivers+1):
-        m += lpSum(E[c,t, w] for t in range(1, T+1) for w in range(1, 3)) == G[c]
-
-    for n in range(1, number_passengers+1):
-        m += lpSum(X[n, c, t, w] for c in range(1, number_drivers+1) for t in range(1, T+1) for w in range(1, 3)) <= places_offered_passengers[n,2]
-
-    for t in range(1, T+1):
-        for c in range(1, number_drivers+1):
-            for w in range(1, 3):
-                m += lpSum(X[n, c, t, w] for n in range(1, number_passengers+1)) <= number_places_offers[c]
-
-    for t in range(1, T+1):
-        for n in range(1, number_passengers+1):
-            for w in range(1, 3):
-                m += lpSum(X[n, c, t, w]*A[c, t, w]*B[n, t, w] for c in range(1, number_drivers+1)) <= 1
-
-    for t in range(1, T+1):
-        for c in range(1, number_drivers+1):
-            for w in range(1, 3):
-                if A[c, t, w] == 0:
-                    m += lpSum(X[n, c, t, w] for n in range(1, number_passengers+1)) == 0
-
-    for t in range(1, T+1):
-        for n in range(1, number_passengers+1):
-            for w in range(1, 3):
-                if B[n, t, w] == 0:
-                    m += lpSum(X[n, c, t, w] for c in range(1, number_drivers+1)) == 0
+    X = LpVariable.dicts("X", ((i, j, t, w) for i in range(0, number_passengers) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)), cat='Binary') 
+    E = LpVariable.dicts("E", ((j, t, w) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)), cat='Binary')
+    G = LpVariable.dicts("G", (j for j in range(0, number_drivers)), cat='Integer')
 
     # Fonction objectif
-    m += lpSum(np.multiply(X, M)) - Alpha*lpSum(G)
+    m += lpSum(X[i, j, t, w]*M[i, j, t, w] for i in range(0, number_passengers) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)) - lpSum(Alpha*G[j] for j in range(0, number_drivers)) 
+
+    # Contraintes
+    for t in range(0, T):
+        for w in range(0, 2):
+            for c in range(0, number_drivers):
+                m += E[c,t,w] >= 10**(-2)*lpSum(X[n, c, t, w] for n in range(0, number_passengers))
+
+    for c in range(0, number_drivers):
+        m += lpSum(E[c,t, w] for t in range(0, T) for w in range(0, 2)) == G[c]
+
+    for n in range(0, number_passengers):
+        m += lpSum(X[n, c, t, w] for c in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)) <= places_offered_passengers[n,1]
+
+    for t in range(0, T):
+        for c in range(0, number_drivers):
+            for w in range(0, 2):
+                m += lpSum(X[n, c, t, w] for n in range(0, number_passengers)) <= number_places_offers[c]
+
+    for t in range(0, T):
+        for n in range(0, number_passengers):
+            for w in range(0, 2):
+                m += lpSum(X[n, c, t, w]*A[c, t, w]*B[n, t, w] for c in range(0, number_drivers)) <= 1
+
+    for t in range(0, T):
+        for c in range(0, number_drivers):
+            for w in range(0, 2):
+                if A[c, t, w] == 0:
+                    m += lpSum(X[n, c, t, w] for n in range(0, number_passengers)) == 0
+
+    for t in range(0, T):
+        for n in range(0, number_passengers):
+            for w in range(0, 2):
+                if B[n, t, w] == 0:
+                    m += lpSum(X[n, c, t, w] for c in range(0, number_drivers)) == 0
+
+
 
     # Résolution du problème
     m.solve()
@@ -471,8 +498,51 @@ def covoiturage(Beta, Alpha):
     else:
         print("Voir la documentation")
         
+        
+    # Counting the number of satisfied requests
+    nb_request_done = 0
 
+    for w in range(0, 2):
+        for t in range(0, T):
+            for c in range(0, number_drivers):
+                for n in range(0, number_passengers):
+                    if X[n, c, t, w].varValue == 1:
+                        nb_request_done += 1
+       
+    print("Value of the first variable X[0, 0, 0, 0]:")                 
+    print(X[0, 0, 0, 0].varValue)
+    
+    print("Value of the first variable X[15, 4, 6, 1]:")
+    print(X[15, 4, 6, 1].varValue)
+
+    percentage_request = nb_request_done / nb_requests * 100
+
+    print()
+    print("Le nombre de demande de conduite faite par les enfants est :", nb_requests)
+    print("Le nombre de demande de conduite satisfaite est :", nb_request_done)
+    print("Le pourcentage de demande satisfaite est :", percentage_request, "%")
+    print()
+        
+    nb_place_dispo = 0
+    for w in range(0, 2):
+        for t in range(0, T):
+            for c in range(0, number_drivers):
+                res = 0
+                for n in range(0, number_passengers):
+                    if X[n, c, t, w].varValue == 1:
+                        res += 1
+                if res >= 1:
+                    nb_place_dispo += number_places_offers[c]
+                    
+    percentage_remplissage = nb_request_done / nb_place_dispo * 100
+
+    print("Nombre de place disponible après répartition :", nb_place_dispo)
+    print("Le taux de remplissage des voitures est :", percentage_remplissage, "%")
+    print()
 covoiturage(6.5, 4)
+
+#%%
+
 
 
 
