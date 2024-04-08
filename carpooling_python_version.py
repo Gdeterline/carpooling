@@ -17,8 +17,8 @@ print("Workbooks loaded successfully")
 
 
 # Print the first 5 rows of the worksheet
-offers_worksheet.head(5)                  # Seems to have issues. Need to check path and file name
-requests_worksheet.head(5)                 # Seems to have issues. Need to check path and file name
+offers_worksheet.head(5)                  
+requests_worksheet.head(5)                 
 
 #########################################################################################
 # %%
@@ -416,8 +416,7 @@ with np.printoptions(threshold=np.inf):
 
 # %%
 
-#### Covoiturage function ####
-#### Need to continue debugging ####
+#### Carpooling function ####
 
 def covoiturage(Beta, Alpha):
     
@@ -453,7 +452,7 @@ def covoiturage(Beta, Alpha):
     for t in range(0, T):
         for w in range(0, 2):
             for c in range(0, number_drivers):
-                m += E[c,t,w] >= 10**(-2)*lpSum(X[n, c, t, w] for n in range(0, number_passengers))
+                m += E[c,t,w] >= (1/(number_passengers*T*2))*lpSum(X[n, c, t, w] for n in range(0, number_passengers))
 
     for c in range(0, number_drivers):
         m += lpSum(E[c,t, w] for t in range(0, T) for w in range(0, 2)) == G[c]
@@ -539,6 +538,7 @@ def covoiturage(Beta, Alpha):
     print("Nombre de place disponible après répartition :", nb_place_dispo)
     print("Le taux de remplissage des voitures est :", percentage_remplissage, "%")
     print()
+    
 covoiturage(6.5, 4)
 
 #%%
