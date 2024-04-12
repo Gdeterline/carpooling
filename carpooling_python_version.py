@@ -539,10 +539,128 @@ def covoiturage(Beta, Alpha):
     print("Le taux de remplissage des voitures est :", percentage_remplissage, "%")
     print()
     
+    I = 0
+    L = 0
+    E = 0
+    for w in range(0, 2):
+        for t in range(0, T):
+            for c in range(0, number_drivers):
+                J = 0
+                for n in range(0, number_passengers):
+                    L += X[n, c, t, w].varValue
+                    J += X[n, c, t, w].varValue
+                    if M[n, c, t, w] >= 5.01 and X[n, c, t, w].varValue == 1:
+                        E += 1
+                if J >= 1:
+                    I += 1
+
+
+    ########## Incohérence dans les résultats de Mayeul ##########
+    ########## E nombre d'enfants avec et sans leur parent ? ##########
+    print("Nombre d'enfants avec leur parent :", E)
+    print()
+
+    pourcent_family = E / I * 100
+
+    print("Pourcentage d'enfant dans la voiture de leur parent :", pourcent_family, "%")
+    print()
+
+    print("Nombre de voiture utilisée :", I, ", Nombre d'enfant dans les voitures :", L, ", Nombre d'enfants sans leur parent :", E)
+    print()
+    
+    ############################## Display the results ##############################
+    ############################## Create a result Excel table ##############################
+    
+    
+    # Create a result table
+    W = [["" for _ in range(T)] for _ in range(300)]
+
+    # Fill the first row with the request schedule
+    for i in range(T):
+        W[0][i] = horaires_requests[i]
+
+    # Traverse the schedules
+    for t in range(T):
+        h = horaires_requests[t]
+        Time = f"{h}"
+        print()
+        print(Time)
+        VAR1 = []
+        
+        # Traverse the drivers
+        for j in range(number_drivers):
+            nb = number_places_offers[j]
+            d = name_offers[j]
+            e = number_places_offers[j]
+            f = f"{d} {e} places"
+            offer = ""
+            
+            # Traverse the weeks
+            for w in range(0, 2):
+                VAR2 = []
+                VAR3 = []
+                
+                if w == 0:
+                    week = "Semaine paire"
+                elif w == 1:
+                    week = "Semaine Impaire"
+                
+                VAR2.append(week)
+                VAR2.append(f)
+                VAR3.append(week)
+                VAR3.append(f)
+                offer = f"{d} with {nb} places, week {week}:"
+                
+                # Traverse the requests
+                for i in range(number_passengers):
+                    n = name_requests[i]
+                    if X[i, j, t, w].varValue == 1:
+                        offer += f"{n}, "
+                        VAR2.append(n)
+                
+                if offer != f"{d} with {nb} places, week {week}:": 
+                    print(offer)
+                
+                if VAR2 != VAR3:
+                    length = len(VAR2)
+                    VAR1.extend(VAR2)
+                    Q = 15 - length
+                    for _ in range(Q):
+                        VAR1.append("")
+            
+            if VAR1:
+                for g in range(len(VAR1)):
+                    W[g+1][t] = VAR1[g]
+
+    print()
+
+    # Display the number of trips per child
+    nombre_trajets_par_enfant = [0] * number_passengers
+
+    # Traverse the indices n, c, t, w
+    for n in range(number_passengers):
+        for c in range(number_drivers):
+            for t in range(T):
+                for w in range(0, 2):
+                    if X[n, c, t, w].varValue == 1:
+                        nombre_trajets_par_enfant[n] += 1
+
+    for n in range(number_passengers):
+        nbu = places_offered_passengers[n][1]
+        print(f"Enfant {n} qui a le droit à {nbu} trajets: {nombre_trajets_par_enfant[n]} trajets")
+
+    #print(places_offered_passengers)
+
+    # Create an Excel file with the table W
+    df = pd.DataFrame(W)
+    df.to_excel("./Repartition_Voiture_tryout.xlsx", index=False, header=False)
+    
+    
 covoiturage(6.5, 4)
 
 #%%
 
+    
 
 
 
