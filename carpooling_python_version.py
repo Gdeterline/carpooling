@@ -376,12 +376,6 @@ else:
     
  #   It seems to be working as expected """
  
- #%%
-
-###### Étonnant car résultat différent de Mayeul ######
-###### Mais la if condition semble correcte ###########
-###### Voir avec Charlotte et Alessandro ##############
-
 for child in range(number_passengers):
     for parent in range(number_drivers):
         if name_requests[child] in child_offers.iloc[parent].values: #### To check
@@ -419,6 +413,12 @@ with np.printoptions(threshold=np.inf):
 #### Carpooling function ####
 
 def covoiturage(Beta, Alpha):
+    
+    # Create the statistics dictionary, in order to display it on a separate Excel sheet
+    stat_df = {"Statistics": [], "Values": []}
+    
+    stat_df["Statistics"].append("Number of requests")
+    stat_df["Values"].append(nb_requests)
     
     # Create the M matrix
     M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
@@ -515,6 +515,12 @@ def covoiturage(Beta, Alpha):
     print(X[15, 4, 6, 1].varValue)
 
     percentage_request = nb_request_done / nb_requests * 100
+    
+    stat_df["Statistics"].append("Number of requests satisfied")
+    stat_df["Values"].append(nb_request_done)
+    
+    stat_df["Statistics"].append("Percentage of requests satisfied")
+    stat_df["Values"].append(percentage_request)
 
     print()
     print("Le nombre de demande de conduite faite par les enfants est :", nb_requests)
@@ -534,6 +540,9 @@ def covoiturage(Beta, Alpha):
                     nb_place_dispo += number_places_offers[c]
                     
     percentage_remplissage = nb_request_done / nb_place_dispo * 100
+    
+    stat_df["Statistics"].append("Percentage of car filling")
+    stat_df["Values"].append(percentage_remplissage)
 
     print("Nombre de place disponible après répartition :", nb_place_dispo)
     print("Le taux de remplissage des voitures est :", percentage_remplissage, "%")
@@ -555,31 +564,32 @@ def covoiturage(Beta, Alpha):
                     I += 1
 
 
-    ########## Incohérence dans les résultats de Mayeul ##########
-    ########## E nombre d'enfants avec et sans leur parent ? ##########
-    print("Nombre d'enfants avec leur parent :", E)
+    print("Nombre d'enfants sans leur parent :", E)
     print()
 
-    pourcent_family = E / I * 100
+    pourcent_family = (1 - (E / L)) * 100
+
+    stat_df["Statistics"].append("Percentage of children in their parent's car")
+    stat_df["Values"].append(pourcent_family)
 
     print("Pourcentage d'enfant dans la voiture de leur parent :", pourcent_family, "%")
     print()
 
-    print("Nombre de voiture utilisée :", I, ", Nombre d'enfant dans les voitures :", L, ", Nombre d'enfants sans leur parent :", E)
+    #print("Nombre de voitures utilisée :", I, ", Nombre d'enfants dans les voitures :", L, ", Nombre d'enfants sans leur parent :", E)
     print()
     
     ############################## Display the results ##############################
     ############################## Create a result Excel table ##############################
     
     
-    # Create a result table
+    # Create a table to display the results
     W = [["" for _ in range(T)] for _ in range(300)]
 
-    # Fill the first row with the request schedule
+    # Add the schedules
     for i in range(T):
         W[0][i] = horaires_requests[i]
 
-    # Traverse the schedules
+    # Go through all the schedules (Monday 8AM, ...)
     for t in range(T):
         h = horaires_requests[t]
         Time = f"{h}"
@@ -587,7 +597,7 @@ def covoiturage(Beta, Alpha):
         print(Time)
         VAR1 = []
         
-        # Traverse the drivers
+        # Go through the drivers
         for j in range(number_drivers):
             nb = number_places_offers[j]
             d = name_offers[j]
@@ -595,7 +605,7 @@ def covoiturage(Beta, Alpha):
             f = f"{d} {e} places"
             offer = ""
             
-            # Traverse the weeks
+            # Go through the weeks
             for w in range(0, 2):
                 VAR2 = []
                 VAR3 = []
@@ -611,7 +621,7 @@ def covoiturage(Beta, Alpha):
                 VAR3.append(f)
                 offer = f"{d} with {nb} places, week {week}:"
                 
-                # Traverse the requests
+                # Go through the requests to find the passengers
                 for i in range(number_passengers):
                     n = name_requests[i]
                     if X[i, j, t, w].varValue == 1:
@@ -624,10 +634,10 @@ def covoiturage(Beta, Alpha):
                 if VAR2 != VAR3:
                     length = len(VAR2)
                     VAR1.extend(VAR2)
-                    Q = 15 - length
+                    Q = nb + 2 - length  # Determine the number of empty spots in the car
                     for _ in range(Q):
-                        VAR1.append("")
-            
+                        VAR1.append("*")  # "*" for all empty spots in the car
+                            
             if VAR1:
                 for g in range(len(VAR1)):
                     W[g+1][t] = VAR1[g]
@@ -651,17 +661,44 @@ def covoiturage(Beta, Alpha):
 
     #print(places_offered_passengers)
 
-    # Create an Excel file with the table W
+    #### Display both the driving schedule and the statistics ####
     df = pd.DataFrame(W)
-    df.to_excel("./Repartition_Voiture_tryout.xlsx", index=False, header=False)
-    
+    stat_df = pd.DataFrame(stat_df)
+    with pd.ExcelWriter('./Repartition_Voiture_tryout.xlsx') as writer:
+        df.to_excel(writer, sheet_name='Planning', index=False, header=False)
+        stat_df.to_excel(writer, sheet_name='Statistics', index=False, header=True)
+        
     
 covoiturage(6.5, 4)
 
 #%%
 
-    
+
+import openpyxl
+from openpyxl.styles import PatternFill
 
 
+red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+light_grey_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+light_yellow_fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_type="solid")
+
+
+# Load the workbook and select the active sheet
+workbook = openpyxl.load_workbook('./Repartition_Voiture_tryout.xlsx')
+sheet = workbook.active
+
+# Loop through all the cells in the sheet
+for row in sheet.iter_rows():
+    for cell in row:
+        if cell.value is not None and isinstance(cell.value, str):
+            print(cell.value)
+            if 'semaine paire' in cell.value.lower() or 'semaine impaire' in cell.value.lower():
+                cell.fill = light_grey_fill
+            elif 'places' in cell.value.lower():
+                cell.fill = red_fill
+            elif '*' in cell.value:
+                cell.fill = light_yellow_fill
+
+workbook.save('./Repartition_Voiture_tryout_vf.xlsx')
 
 # %%
