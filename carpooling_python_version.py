@@ -679,25 +679,45 @@ from openpyxl.styles import PatternFill
 
 
 red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+dark_grey_fill = PatternFill(start_color="A9A9A9", end_color="A9A9A9", fill_type="solid")
 light_grey_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
 light_yellow_fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_type="solid")
 
 
 # Load the workbook and select the active sheet
 workbook = openpyxl.load_workbook('./Repartition_Voiture_tryout.xlsx')
-sheet = workbook.active
+schedule_sheet = workbook.active
+
+
+week = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"]
 
 # Loop through all the cells in the sheet
-for row in sheet.iter_rows():
+for row in schedule_sheet.iter_rows():
     for cell in row:
         if cell.value is not None and isinstance(cell.value, str):
-            print(cell.value)
+            
+            for i in week:
+                if i in cell.value.lower():
+                    cell.fill = dark_grey_fill
+            
             if 'semaine paire' in cell.value.lower() or 'semaine impaire' in cell.value.lower():
                 cell.fill = light_grey_fill
             elif 'places' in cell.value.lower():
                 cell.fill = red_fill
-            elif '*' in cell.value:
+            elif '*' in cell.value.lower():
                 cell.fill = light_yellow_fill
+
+for column in schedule_sheet.columns:
+    max_length = max(len(str(cell.value)) for cell in column)
+    adjusted_width = (max_length + 2) * 1.0
+    schedule_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
+
+statistics_sheet = workbook["Statistics"]
+for column in statistics_sheet.columns:
+    max_length = max(len(str(cell.value)) for cell in column)
+    adjusted_width = (max_length + 2) * 1.0
+    statistics_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
+
 
 workbook.save('./Repartition_Voiture_tryout_vf.xlsx')
 
