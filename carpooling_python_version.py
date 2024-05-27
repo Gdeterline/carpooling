@@ -7,8 +7,8 @@ from pulp import LpProblem, LpVariable, LpBinary, LpInteger, LpMaximize, lpSum
 
 
 # Load the workbooks and their respective worksheets
-offers_worksheet = pd.read_excel("./Offres_2022.xlsx", sheet_name="Matching")
-requests_worksheet = pd.read_excel("./Demandes_2022.xlsx", sheet_name="Demandes")
+offers_worksheet = pd.read_excel("./Offres_2022.xlsx", sheet_name="Réponses au formulaire 1")
+requests_worksheet = pd.read_excel("./Demandes_2022.xlsx", sheet_name="Réponses au formulaire 1")
 
 print("Workbooks loaded successfully")
 
@@ -111,6 +111,7 @@ for i in range(number_passengers):
     for j in range(number_drivers):
         if name_requests[i] in child_offers.iloc[j].values:
             family[i, 1] = j + 1
+            print(f"Passenger {i+1} belongs to the family of driver {j+1}")
 
 print(family)
 print()
@@ -540,6 +541,7 @@ def covoiturage(Beta, Alpha):
                     nb_place_dispo += number_places_offers[c]
                     
     percentage_remplissage = nb_request_done / nb_place_dispo * 100
+    print(nb_place_dispo)
     
     stat_df["Statistics"].append("Percentage of car filling")
     stat_df["Values"].append(percentage_remplissage)
@@ -664,7 +666,7 @@ def covoiturage(Beta, Alpha):
     #### Display both the driving schedule and the statistics ####
     df = pd.DataFrame(W)
     stat_df = pd.DataFrame(stat_df)
-    with pd.ExcelWriter('./Repartition_Voiture_tryout.xlsx') as writer:
+    with pd.ExcelWriter('./Repartition_Voiture_tryout_2023.xlsx') as writer:
         df.to_excel(writer, sheet_name='Planning', index=False, header=False)
         stat_df.to_excel(writer, sheet_name='Statistics', index=False, header=True)
         
@@ -685,7 +687,7 @@ light_yellow_fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_t
 
 
 # Load the workbook and select the active sheet
-workbook = openpyxl.load_workbook('./Repartition_Voiture_tryout.xlsx')
+workbook = openpyxl.load_workbook('./Repartition_Voiture_tryout_2023.xlsx')
 schedule_sheet = workbook.active
 
 
@@ -719,6 +721,6 @@ for column in statistics_sheet.columns:
     statistics_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
 
-workbook.save('./Repartition_Voiture_tryout_vf.xlsx')
+workbook.save('./Repartition_Voiture_tryout_2023_vf.xlsx')
 
 # %%
