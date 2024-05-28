@@ -666,7 +666,7 @@ def covoiturage(Beta, Alpha):
     #### Display both the driving schedule and the statistics ####
     df = pd.DataFrame(W)
     stat_df = pd.DataFrame(stat_df)
-    with pd.ExcelWriter('./Repartition_Voiture_tryout_2023.xlsx') as writer:
+    with pd.ExcelWriter('./Repartition_Voiture_tryout_2022.xlsx') as writer:
         df.to_excel(writer, sheet_name='Planning', index=False, header=False)
         stat_df.to_excel(writer, sheet_name='Statistics', index=False, header=True)
         
@@ -721,6 +721,6 @@ for column in statistics_sheet.columns:
     statistics_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
 
-workbook.save('./Repartition_Voiture_tryout_2023_vf.xlsx')
+workbook.save('./Repartition_Voiture_tryout_2022_vf.xlsx')
 
 # %%
