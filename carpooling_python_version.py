@@ -1,38 +1,39 @@
-# %%
+
 # Import the required libraries
 import pandas as pd
 import numpy as np
 from pulp import LpProblem, LpVariable, LpBinary, LpInteger, LpMaximize, lpSum
+import openpyxl
+from openpyxl.styles import PatternFill
+import re
+
+
+red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+dark_grey_fill = PatternFill(start_color="A9A9A9", end_color="A9A9A9", fill_type="solid")
+light_grey_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+light_yellow_fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_type="solid")
+light_blue_fill = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")
+dark_blue_fill = PatternFill(start_color="00008B", end_color="00008B", fill_type="solid")
 
 
 
 # Load the workbooks and their respective worksheets
+input_file = "./Offres_2022.xlsx"
 offers_worksheet = pd.read_excel("./Offres_2022.xlsx", sheet_name="Réponses au formulaire 1")
 requests_worksheet = pd.read_excel("./Demandes_2022.xlsx", sheet_name="Réponses au formulaire 1")
 
 print("Workbooks loaded successfully")
 
-#########################################################################################
-# %%
 
+# Extract the year from the input file name using regular expression
+match = re.search(r'(\d{4})', input_file)
+if match:
+    year = match.group(1)
+else:
+    raise ValueError("Year not found in the input file name")
 
-# Print the first 5 rows of the worksheet
-offers_worksheet.head(5)                  
-requests_worksheet.head(5)                 
-
-#########################################################################################
-# %%
-
-# Check the columns of the worksheet
-requests_worksheet.columns
-offers_worksheet.columns
-
-
-#########################################################################################
-# %%
 
 # First treatment of the offer sheet data
-
 horaires_offers = offers_worksheet.columns[6:]
 #print(horaires_offers)
 print()
@@ -50,12 +51,6 @@ availabilities_offers = offers_worksheet.loc[:, "Lundi 8h":"Vendredi 17h30"]
 print()
 
 
-# Try push to a datasheet
-# Convert horaires_offers to a DataFrame
-#horaires_offers_df = pd.DataFrame(horaires_offers)
-#horaires_offers_df.to_csv("./horaires_offers.csv", index=False, header=False)
-
-# %%
 
 # First treatment of the request sheet data
 
@@ -69,10 +64,9 @@ availabilities_requests = requests_worksheet.loc[:, "Lundi 8h":"Vendredi 18h30"]
 print(availabilities_requests)
 print()
 
-# %%
+
 
 # Get number of drivers and passengers
-
 nb_requests = 0
 
 number_drivers = len(name_offers)
@@ -82,7 +76,7 @@ print(f"Number of passengers: {number_passengers}")
 
 # number of schedules T
 T = requests_worksheet.shape[1] - 1
-print("Nombre d'horaire T =", T)
+print("Number of schedules =", T)
 
 
 
@@ -100,9 +94,8 @@ for i in range(number_passengers):
 print(f"Number of requests: {nb_requests}")
             
 
-# %%
-
-# family matrix with the first column being the passenger number (sheet Demandes_2022) and the second column being the driver number (from the same family) (sheet Offres_2022)
+# family matrix with the first column being the passenger number (sheet Demandes_2022) 
+# and the second column being the driver number (from the same family) (sheet Offres_2022)
 
 family = np.zeros((number_passengers, 2), dtype=int)
 
@@ -117,15 +110,9 @@ print(family)
 print()
 
 
-# %%
 
-availabilities_offers.head(5)
-
-
-# %%
-
-# places_offered_drivers matrix with the first column being the driver number (sheet Offres_2022) and the second column being the number of places offered by the driver
-# over the two weeks
+# places_offered_drivers matrix with the first column being the driver number (sheet Offres_2022) 
+# and the second column being the number of places offered by the driver over the two weeks
 
 places_offered_drivers = np.zeros((number_drivers, 2), dtype=int)
 
@@ -143,9 +130,10 @@ print(places_offered_drivers)
 print()
 
 
-#%%
 
-# places_offered_passengers matrix with the first column being the passenger number (sheet Demandes_2022) and the second column being the number of places offered by the driver
+
+# places_offered_passengers matrix with the first column being the passenger number (sheet Demandes_2022) 
+# and the second column being the number of places offered by the driver
 
 places_offered_passengers = np.zeros((number_passengers, 2), dtype=int)
 
@@ -159,12 +147,6 @@ print(places_offered_passengers)
 print()
 
 
-# %%
-
-
-print(availabilities_offers.stack().unique())
-
-# %%
 
 # Determine the number of offers over one week (equals two weeks here since there are only Oui and Non values in the availabilities_offers matrix)
 N_o = sum(x in ["Oui", "Pair", "Impair"] for x in availabilities_offers.values.flatten())
@@ -175,7 +157,6 @@ N_r = sum(x in ["Oui", "Pair", "Impair"] for x in availabilities_requests.values
 print(f"Number of requests: {N_r}")
 
 
-# %%
 
 # Create the matrices O and R
 
@@ -186,7 +167,7 @@ O = np.zeros((N_o, 5), dtype=int)
 idx = 0
 
 
-# Traverse the offers array
+# Go through the offers array
 
 for i in range(availabilities_offers.shape[0]):
     nb_places = number_places_offers[i]
@@ -229,7 +210,7 @@ R = np.zeros((N_r, 4), dtype=int)
 # Counter for valid requests
 idr = 0
 
-# Traverse the requests array
+# Go through the requests array
 for i in range(availabilities_requests.shape[0]):
     for j in range(availabilities_requests.shape[1]):
         if availabilities_requests.iloc[i, j] == "Oui":
@@ -258,9 +239,8 @@ print("Matrix R:")
 print(R)
 print()
 
-#%%
-# Display drivers and passengers
 
+# Display the available drivers and passengers at each hour
 
 # Traverse all days and hours
 for t in range(1, T+1):
@@ -294,18 +274,16 @@ for t in range(1, T+1):
     print(available_passengers_impairs)
 
 
-# %%
 
 # A and B initialization with zeros
 A = np.zeros((number_drivers, T, 2), dtype=int)
 B = np.zeros((number_passengers, T, 2), dtype=int)
 
-###### Reminder : Julia's indexes begin at 1, Python's start at 0
 
 # Fill A with O values
 for i in range(O.shape[0]):
-    driver = O[i, 0] - 1  # Adjust the index by subtracting 1
-    time = O[i, 1] - 1  # Adjust the index by subtracting 1
+    driver = O[i, 0] - 1  
+    time = O[i, 1] - 1  
     if O[i, 2] == 1:
         A[driver, time, 0] = 1
     if O[i, 3] == 1:
@@ -314,8 +292,8 @@ for i in range(O.shape[0]):
 
 # Fill B with R values
 for i in range(R.shape[0]):
-    passenger = R[i, 0] - 1  # Adjust the index by subtracting 1
-    time = R[i, 1] - 1  # Adjust the index by subtracting 1
+    passenger = R[i, 0] - 1  
+    time = R[i, 1] - 1  
     if R[i, 2] == 1:
         B[passenger, time, 0] = 1
     if R[i, 3] == 1:
@@ -324,58 +302,17 @@ for i in range(R.shape[0]):
 
 print("Variable A:")
 print(A)
-
-# For details on the A matrix uncomment the following
-print(len(A))
-print(len(A[0]))
-with np.printoptions(threshold=np.inf):
-    print(A)
-
-#%%
-
-print(A[:,:,1]) #To see the first part of the full A matrix
-
-#%%
-
-
-print("Variable A:")
+print()
+print("Variable B:")
 print(B)
 
-# For details on the B matrix uncomment the following
-print(len(B))
-print(len(B[0]))
-with np.printoptions(threshold=np.inf):
-    print(B)
 
-#%%
-
-print(B[:,:,1]) #To see the first part of the full B matrix
-
-# %%
 
 # Create the M matrix
 M = np.zeros((number_passengers, number_drivers, T, 2), dtype=float)
 
 Beta = 7
 
-""" #%%
-
-#Test to check if the if condition works as expected
-
-
-print(name_requests)
-print(child_offers)
-print()
-
-print(name_requests[6])
-print(child_offers.iloc[0].values)
-print()
-if name_requests[6] in child_offers.iloc[0].values:
-    print("True")
-else:
-    print("False") 
-    
- #   It seems to be working as expected """
  
 for child in range(number_passengers):
     for parent in range(number_drivers):
@@ -392,26 +329,9 @@ print("Matrix M:")
 with np.printoptions(threshold=np.inf):
     print(M)
 
-#%%
 
-# Print the indexes of the M matrix where there are several 7
-""" indexes = np.argwhere(M == 7)
-print(indexes) """
 
-""" print(M[42, 9, 25, 1])
-print(M[0, 25, 0, 0]) """
-
-print(name_requests)
-print(child_offers)
-
-""""
-with np.printoptions(threshold=np.inf):
-    print(M[:, :, :, 1]) #To see the first part of the full M matrix
-"""
-
-# %%
-
-#### Carpooling function ####
+############################################################ CARPOOLING FUNCTION ############################################################
 
 def covoiturage(Beta, Alpha):
     
@@ -436,20 +356,20 @@ def covoiturage(Beta, Alpha):
                         M[child, parent, t, w] = 10 - Beta
     
 
-    # Création du modèle
+    # Create the optimization model
     m = LpProblem("Carpooling", LpMaximize)
     
     
 
-    # Variables de décision
+    # Create the decision variables
     X = LpVariable.dicts("X", ((i, j, t, w) for i in range(0, number_passengers) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)), cat='Binary') 
     E = LpVariable.dicts("E", ((j, t, w) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)), cat='Binary')
     G = LpVariable.dicts("G", (j for j in range(0, number_drivers)), cat='Integer')
 
-    # Fonction objectif
+    # Objective function
     m += lpSum(X[i, j, t, w]*M[i, j, t, w] for i in range(0, number_passengers) for j in range(0, number_drivers) for t in range(0, T) for w in range(0, 2)) - lpSum(Alpha*G[j] for j in range(0, number_drivers)) 
 
-    # Contraintes
+    # Constraints
     for t in range(0, T):
         for w in range(0, 2):
             for c in range(0, number_drivers):
@@ -485,10 +405,10 @@ def covoiturage(Beta, Alpha):
 
 
 
-    # Résolution du problème
+    # Solve the optimization problem
     m.solve()
 
-    # Vérification du statut de la solution
+    # Print the status of the solution
     if m.status == 1:
         print("Solution optimale trouvée:")
     elif m.status == -1:
@@ -577,10 +497,10 @@ def covoiturage(Beta, Alpha):
     print("Pourcentage d'enfant dans la voiture de leur parent :", pourcent_family, "%")
     print()
 
-    #print("Nombre de voitures utilisée :", I, ", Nombre d'enfants dans les voitures :", L, ", Nombre d'enfants sans leur parent :", E)
+    print("Nombre de voitures utilisée :", I, ", Nombre d'enfants dans les voitures :", L, ", Nombre d'enfants sans leur parent :", E)
     print()
     
-    ############################## Display the results ##############################
+    ############################## Display the results ######################################
     ############################## Create a result Excel table ##############################
     
     
@@ -666,61 +586,57 @@ def covoiturage(Beta, Alpha):
     #### Display both the driving schedule and the statistics ####
     df = pd.DataFrame(W)
     stat_df = pd.DataFrame(stat_df)
-    with pd.ExcelWriter('./Repartition_Voiture_tryout_2022.xlsx') as writer:
+    with pd.ExcelWriter(f'./Repartition_Voiture_{year}.xlsx') as writer:
         df.to_excel(writer, sheet_name='Planning', index=False, header=False)
         stat_df.to_excel(writer, sheet_name='Statistics', index=False, header=True)
         
-    
-covoiturage(6.5, 4)
+        
 
-#%%
-
-
-import openpyxl
-from openpyxl.styles import PatternFill
-
-
-red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-dark_grey_fill = PatternFill(start_color="A9A9A9", end_color="A9A9A9", fill_type="solid")
-light_grey_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
-light_yellow_fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_type="solid")
 
 
 # Load the workbook and select the active sheet
-workbook = openpyxl.load_workbook('./Repartition_Voiture_tryout_2023.xlsx')
+workbook = openpyxl.load_workbook(f'./Repartition_Voiture_{year}.xlsx')
 schedule_sheet = workbook.active
 
+        
+        
+def format_schedule():
+    week = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"]
 
-week = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"]
+    # Loop through all the cells in the sheet
+    for row in schedule_sheet.iter_rows():
+        for cell in row:
+            if cell.value is not None and isinstance(cell.value, str):
+                
+                for i in week:
+                    if i in cell.value.lower():
+                        cell.fill = dark_grey_fill
+                
+                if 'semaine paire' in cell.value.lower() :
+                    cell.fill = dark_blue_fill
+                elif 'semaine impaire' in cell.value.lower():
+                    cell.fill = light_blue_fill
+                elif 'places' in cell.value.lower():
+                    cell.fill = red_fill
+                elif '*' in cell.value.lower():
+                    cell.fill = light_yellow_fill
 
-# Loop through all the cells in the sheet
-for row in schedule_sheet.iter_rows():
-    for cell in row:
-        if cell.value is not None and isinstance(cell.value, str):
-            
-            for i in week:
-                if i in cell.value.lower():
-                    cell.fill = dark_grey_fill
-            
-            if 'semaine paire' in cell.value.lower() or 'semaine impaire' in cell.value.lower():
-                cell.fill = light_grey_fill
-            elif 'places' in cell.value.lower():
-                cell.fill = red_fill
-            elif '*' in cell.value.lower():
-                cell.fill = light_yellow_fill
+    for column in schedule_sheet.columns:
+        max_length = max(len(str(cell.value)) for cell in column)
+        adjusted_width = (max_length + 2) * 1.0
+        schedule_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
-for column in schedule_sheet.columns:
-    max_length = max(len(str(cell.value)) for cell in column)
-    adjusted_width = (max_length + 2) * 1.0
-    schedule_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
-
-statistics_sheet = workbook["Statistics"]
-for column in statistics_sheet.columns:
-    max_length = max(len(str(cell.value)) for cell in column)
-    adjusted_width = (max_length + 2) * 1.0
-    statistics_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
+    statistics_sheet = workbook["Statistics"]
+    for column in statistics_sheet.columns:
+        max_length = max(len(str(cell.value)) for cell in column)
+        adjusted_width = (max_length + 2) * 1.0
+        statistics_sheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
 
-workbook.save('./Repartition_Voiture_tryout_2022_vf.xlsx')
+    workbook.save(f'./Repartition_Voiture_{year}_vf.xlsx')
+        
 
-# %%
+covoiturage(6.5, 4)
+format_schedule()
+print()
+print("Excel sheet created successfully")
