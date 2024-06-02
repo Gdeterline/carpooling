@@ -29,10 +29,10 @@ In the "carpooling_python_version.py" file, you will have 2 things to change you
 
 On lines 18 and 19 of the file, you'll find the following codelines :
 
-\# Load the workbooks and their respective worksheets
-input_file = "*./Offres_2022.xlsx*"
-offers_worksheet = pd.read_excel("./*Offres_2022.xlsx*", sheet_name="Réponses au formulaire 1")
-requests_worksheet = pd.read_excel("./*Demandes_2022.xlsx*", sheet_name="Réponses au formulaire 1")
+\# Load the workbooks and their respective worksheets\
+input_file = "*./Offres_2022.xlsx*"\
+offers_worksheet = pd.read_excel("./*Offres_2022.xlsx*", sheet_name="Réponses au formulaire 1")\
+requests_worksheet = pd.read_excel("./*Demandes_2022.xlsx*", sheet_name="Réponses au formulaire 1")\
 
 You will need to replace both *Offres_2022.xlsx* and *Demandes_2022.xlsx* by the name of your matching files. 
 The name of your file must contain the year you are in, on the same model as the names above.
